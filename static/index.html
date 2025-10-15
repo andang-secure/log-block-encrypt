@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>区块日志系统</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#1e293b;min-height:100vh}
+    header{padding:24px 32px;border-bottom:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);position:sticky;top:0;z-index:10;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)}
+    h1{font-size:24px;margin:0;font-weight:700;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    main{max-width:1200px;margin:32px auto;padding:0 24px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    .card{background:rgba(255,255,255,0.95);border:1px solid rgba(255,255,255,0.3);border-radius:16px;padding:24px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);backdrop-filter:blur(10px)}
+    .card h2{font-size:18px;margin:0 0 20px 0;font-weight:600;color:#334155}
+    label{display:block;font-size:13px;margin:12px 0 6px;color:#64748b;font-weight:500}
+    input,select,textarea{width:100%;padding:12px 16px;border-radius:10px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:14px;transition:all 0.2s}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1)}
+    button{background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border:none;color:#fff;padding:12px 24px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;transition:all 0.3s;box-shadow:0 4px 6px -1px rgba(102,126,234,0.4)}
+    button:hover{transform:translateY(-2px);box-shadow:0 10px 15px -3px rgba(102,126,234,0.5)}
+    button:active{transform:translateY(0)}
+    button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+    button.secondary{background:#64748b;box-shadow:0 4px 6px -1px rgba(100,116,139,0.4)}
+    button.secondary:hover{box-shadow:0 10px 15px -3px rgba(100,116,139,0.4)}
+    .table-wrap{border:1px solid #e2e8f0;border-radius:12px;overflow:auto;max-height:500px;background:#ffffff}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:#f8fafc;z-index:1;font-weight:600}
+    th,td{border-bottom:1px solid #e2e8f0;padding:14px 16px;font-size:13px;text-align:left}
+    tbody tr{transition:background 0.2s}
+    tbody tr:hover{background:#f8fafc;cursor:pointer}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .ok{color:#16a34a;font-weight:600}
+    .bad{color:#dc2626;font-weight:600}
+    .row{display:flex;gap:12px;align-items:center}
+    .filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    
+    /* 弹窗样式 */
+    .modal{display:none;position:fixed;z-index:100;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);animation:fadeIn 0.2s}
+    .modal.show{display:flex;align-items:center;justify-content:center}
+    .modal-content{background:#fff;border-radius:20px;padding:32px;max-width:500px;width:90%;animation:slideUp 0.3s;box-shadow:0 20px 25px -5px rgba(0,0,0,0.2)}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+    .modal-header h3{margin:0;font-size:20px;font-weight:700;color:#1e293b}
+    .close{font-size:28px;font-weight:300;color:#94a3b8;cursor:pointer;line-height:1;transition:color 0.2s}
+    .close:hover{color:#475569}
+    .modal-footer{display:flex;gap:12px;justify-content:flex-end;margin-top:24px}
+    
+    /* 通知样式 */
+    .toast{position:fixed;top:24px;right:24px;background:#fff;border-radius:12px;padding:16px 24px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.2);z-index:200;animation:slideIn 0.3s;min-width:300px}
+    .toast.success{border-left:4px solid #16a34a}
+    .toast.error{border-left:4px solid #dc2626}
+    .toast-content{display:flex;align-items:center;gap:12px}
+    .toast-icon{font-size:24px}
+    .toast-message{flex:1}
+    .toast-title{font-weight:600;font-size:14px;margin-bottom:4px}
+    .toast-text{font-size:13px;color:#64748b}
+    
+    /* 分页样式 */
+    .pagination{display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding:12px 16px;background:#f8fafc;border-radius:10px}
+    .pagination-controls{display:flex;gap:8px;align-items:center}
+    .pagination-btn{min-width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .pagination-info{font-size:13px;color:#64748b;font-weight:500}
+    
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+    @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+    
+    @media (max-width: 960px){
+      main{grid-template-columns:1fr}
+      .split{grid-template-columns:1fr}
+      .filters{grid-template-columns:1fr}
+    }
+    
+    .create-log-btn{
+      background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      font-size:16px;
+      padding:14px 28px;
+      box-shadow:0 4px 6px -1px rgba(245,158,11,0.4);
+    }
+    .create-log-btn:hover{
+      box-shadow:0 10px 15px -3px rgba(245,158,11,0.5);
+    }
+    
+    .status-badge{
+      display:inline-block;
+      padding:4px 12px;
+      border-radius:6px;
+      font-size:12px;
+      font-weight:600;
+    }
+    .status-badge.success{background:#dcfce7;color:#16a34a}
+    .status-badge.error{background:#fee2e2;color:#dc2626}
+    .status-badge.warning{background:#fef3c7;color:#d97706}
+  </style>
+  <script>
+    let currentBlockPage = 1;
+    let currentBlockPageSize = 10;
+    let currentBlockTotal = 0;
+    let currentLogPage = 1;
+    let currentLogPageSize = 10;
+    let currentLogTotal = 0;
+    
+    async function api(path, opts={}){
+      const res = await fetch(path, Object.assign({headers:{'Content-Type':'application/json'}}, opts));
+      if(!res.ok){
+        const t = await res.text();
+        throw new Error(t || res.statusText);
+      }
+      return res.json();
+    }
+    
+    // 显示通知
+    function showToast(title, message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      const icon = type === 'success' ? '✓' : '✗';
+      toast.innerHTML = `
+        <div class="toast-content">
+          <div class="toast-icon">${icon}</div>
+          <div class="toast-message">
+            <div class="toast-title">${title}</div>
+            <div class="toast-text">${message}</div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+    
+    // 显示/隐藏弹窗
+    function showModal(id) {
+      document.getElementById(id).classList.add('show');
+    }
+    function hideModal(id) {
+      document.getElementById(id).classList.remove('show');
+    }
+    
+    async function refreshState(){
+      const s = await api('/api/state');
+      document.getElementById('currentBlockId').textContent = s.currentBlockId || '-';
+      document.getElementById('currentLogCount').textContent = s.currentLogCount;
+      document.getElementById('randomBlockSize').textContent = s.randomBlockSize;
+      document.getElementById('sealedBlocksCount').textContent = s.sealedBlocksCount;
+    }
+    
+    async function loadBlocks(page){
+      if(page) currentBlockPage = page;
+      const q = new URLSearchParams();
+      const start = document.getElementById('start')?.value;
+      const end = document.getElementById('end')?.value;
+      q.set('page', currentBlockPage);
+      q.set('pageSize', currentBlockPageSize);
+      if(start) q.set('start', Date.parse(start));
+      if(end) q.set('end', Date.parse(end));
+      const url = '/api/blocks?' + q.toString();
+      const resp = await api(url);
+      const list = resp.list || [];
+      currentBlockTotal = resp.total || 0;
+      const tbody = document.getElementById('blocksBody');
+      tbody.innerHTML = '';
+
+      // 显示整体区块链验证状态
+      const blockchainValid = !!resp.blockchainValid;
+      document.getElementById('chainValid').textContent = blockchainValid ? '是' : '否';
+      document.getElementById('chainValid').className = blockchainValid ? 'ok' : 'bad';
+
+      function getId(h){ return h.BlockID || h.BlockId || h.block_id || h.blockId || h.blockID; }
+      function getCount(h){ return h.LogCount || h.logCount; }
+      function getMerkle(h){ return (h.MerkleRoot || h.merkleRoot || '').slice(0,12); }
+      function getDateTime(h){ return h.DateTime || h.dateTime || '-'; }
+
+      list.sort((a,b)=>String(getId(a)).localeCompare(String(getId(b))));
+
+      // 获取区块验证信息
+      const blockVerifications = resp.blockVerifications || {};
+
+      for(const h of list){
+        const tr = document.createElement('tr');
+        const id = getId(h);
+        const dateTime = getDateTime(h);
+
+        // 获取该区块的验证信息
+        const verification = blockVerifications[id] || {};
+        const blockValid = verification.valid !== false;
+        const tamperedLogsCount = verification.tamperedLogs ? verification.tamperedLogs.length : 0;
+
+        // 构建状态显示
+        let statusHTML = '';
+        if (!blockValid) {
+          statusHTML = `<span class="status-badge error">无效</span>`;
+        } else if (tamperedLogsCount > 0) {
+          statusHTML = `<span class="status-badge warning">${tamperedLogsCount}条篡改</span>`;
+        } else {
+          statusHTML = `<span class="status-badge success">正常</span>`;
+        }
+
+        tr.innerHTML = `<td class="mono">${id}</td><td>${dateTime}</td><td class="mono">${getCount(h)}</td><td class="mono">${getMerkle(h)}...</td><td>${statusHTML}</td>`;
+        tr.onclick = () => openBlock(id);
+        tbody.appendChild(tr);
+      }
+      const totalEl = document.getElementById('total');
+      if(totalEl) totalEl.textContent = currentBlockTotal;
+      updateBlockPagination();
+    }
+    
+    function updateBlockPagination(){
+      const totalPages = Math.ceil(currentBlockTotal / currentBlockPageSize);
+      document.getElementById('blockPageInfo').textContent = `第 ${currentBlockPage} / ${totalPages} 页（共 ${currentBlockTotal} 条）`;
+      document.getElementById('blockPrevBtn').disabled = currentBlockPage <= 1;
+      document.getElementById('blockNextBtn').disabled = currentBlockPage >= totalPages;
+    }
+    
+    function prevBlockPage(){
+      if(currentBlockPage > 1){
+        loadBlocks(currentBlockPage - 1);
+      }
+    }
+    
+    function nextBlockPage(){
+      const totalPages = Math.ceil(currentBlockTotal / currentBlockPageSize);
+      if(currentBlockPage < totalPages){
+        loadBlocks(currentBlockPage + 1);
+      }
+    }
+    
+    async function openBlock(id){
+      const data = await api('/api/blocks/'+id);
+      const pre = document.getElementById('blockDetail');
+      try{
+        if(data && data.Logs && Array.isArray(data.Logs)){
+          const lines = [];
+          lines.push(`区块ID: ${data.Header.BlockID}`);
+          lines.push(`日志条数: ${data.Header.LogCount}`);
+          lines.push(`Merkle根: ${data.Header.MerkleRoot}`);
+          lines.push(`前区块哈希: ${data.Header.PrevBlockHash}`);
+
+          // 显示区块验证信息
+          if (data.Verification) {
+            const v = data.Verification;
+            lines.push('');
+            lines.push('=== 验证信息 ===');
+            lines.push(`整体有效性: ${v.valid ? '有效' : '无效'}`);
+            lines.push(`签名验证: ${v.signatureValid ? '通过' : '失败'}`);
+            lines.push(`Merkle树验证: ${v.merkleValid ? '通过' : '失败'}`);
+            if (v.tamperedLogs && v.tamperedLogs.length > 0) {
+              lines.push(`被篡改日志: ${v.tamperedLogs.join(', ')}`);
+            } else {
+              lines.push('被篡改日志: 无');
+            }
+          }
+
+          lines.push('');
+          lines.push('=== 日志列表 ===');
+          for(const l of data.Logs){
+            const tag = l.tampered ? '[已篡改]' : '[正常]';
+            lines.push(`${tag} ${l.LogID} | ${l.Operator}/${l.KeyID}/${l.Action} | ${new Date(l.Time).toLocaleString()}`);
+          }
+          pre.innerHTML = lines.map(s=>{
+            if(s.startsWith('[已篡改]')) return `<span class="bad">${s}</span>`;
+            if(s.startsWith('[正常]')) return `<span class="ok">${s}</span>`;
+            if(s.includes('验证信息') || s.includes('日志列表')) return `<strong>${s}</strong>`;
+            return s;
+          }).join('\n');
+          return;
+        }
+      }catch(e){}
+      pre.textContent = JSON.stringify(data,null,2);
+    }
+    
+    async function createLog(){
+      try {
+        const body = {
+          operator: document.getElementById('m_operator').value.trim(),
+          keyId: document.getElementById('m_keyId').value.trim(),
+          action: document.getElementById('m_action').value,
+          content: document.getElementById('m_content').value.trim(),
+        };
+        
+        if (!body.operator || !body.keyId) {
+          showToast('验证失败', '操作人和密钥ID不能为空', 'error');
+          return;
+        }
+        
+        await api('/api/logs',{method:'POST',body:JSON.stringify(body)});
+        hideModal('createLogModal');
+        showToast('创建成功', '日志已成功创建并记录到区块链', 'success');
+        
+        // 清空表单
+        document.getElementById('m_operator').value = '';
+        document.getElementById('m_keyId').value = '';
+        document.getElementById('m_content').value = '';
+        
+        await refreshState();
+        try { await loadBlocks(); } catch(e){}
+        try { await loadLogs(); } catch(e){}
+      } catch(e) {
+        showToast('创建失败', e.message || '创建日志时发生错误', 'error');
+      }
+    }
+    
+    async function loadLogs(page){
+      if(page) currentLogPage = page;
+      const q = new URLSearchParams();
+      const operator = document.getElementById('l_operator')?.value.trim();
+      const keyId = document.getElementById('l_keyId')?.value.trim();
+      const action = document.getElementById('l_action')?.value;
+      const start = document.getElementById('l_start')?.value;
+      const end = document.getElementById('l_end')?.value;
+      q.set('page', currentLogPage);
+      q.set('pageSize', currentLogPageSize);
+      if(operator) q.set('operator', operator);
+      if(keyId) q.set('keyId', keyId);
+      if(action) q.set('action', action);
+      if(start) q.set('start', Date.parse(start));
+      if(end) q.set('end', Date.parse(end));
+      const resp = await api('/api/logs?' + q.toString());
+      const list = resp.list || [];
+      currentLogTotal = resp.total || 0;
+      const tbody = document.getElementById('logsBody');
+      tbody.innerHTML = '';
+      for(const it of list){
+        const tr = document.createElement('tr');
+        const ts = it.Time ? new Date(it.Time).toLocaleString() : '-';
+        const hashShort = (it.CurrentHash || '').slice(0, 12);
+
+        // 完整验证结果显示
+        let badgeHTML = '';
+        if (it.verified === true) {
+          badgeHTML = '<span class="status-badge success">✓ 验证通过</span>';
+        } else if (it.tampered === true) {
+          badgeHTML = '<span class="status-badge error">✗ 内容篡改</span>';
+        } else {
+          badgeHTML = '<span class="status-badge error">✗ 验证失败</span>';
+        }
+
+        tr.innerHTML = `<td class="mono">${it.LogID || ''}</td><td>${it.Operator || ''}</td><td>${it.KeyID || ''}</td><td>${it.Action || ''}</td><td>${ts}</td><td class="mono">${it.BlockID || ''}</td><td class="mono">${hashShort}...</td><td>${badgeHTML}</td>`;
+        tbody.appendChild(tr);
+      }
+      updateLogPagination();
+    }
+    
+    function updateLogPagination(){
+      const totalPages = Math.ceil(currentLogTotal / currentLogPageSize);
+      document.getElementById('logPageInfo').textContent = `第 ${currentLogPage} / ${totalPages} 页（共 ${currentLogTotal} 条）`;
+      document.getElementById('logPrevBtn').disabled = currentLogPage <= 1;
+      document.getElementById('logNextBtn').disabled = currentLogPage >= totalPages;
+    }
+    
+    function prevLogPage(){
+      if(currentLogPage > 1){
+        loadLogs(currentLogPage - 1);
+      }
+    }
+    
+    function nextLogPage(){
+      const totalPages = Math.ceil(currentLogTotal / currentLogPageSize);
+      if(currentLogPage < totalPages){
+        loadLogs(currentLogPage + 1);
+      }
+    }
+    
+    window.addEventListener('load', async ()=>{
+      await refreshState();
+      await loadBlocks();
+      await loadLogs();
+    });
+    
+    // 点击弹窗外部关闭
+    window.onclick = function(event) {
+      const modals = document.querySelectorAll('.modal');
+      modals.forEach(modal => {
+        if (event.target === modal) {
+          modal.classList.remove('show');
+        }
+      });
+    }
+  </script>
+</head>
+<body>
+<header>
+  <h1>🔐 区块日志系统</h1>
+  <div class="row">
+    <a href="/api/dbfile" style="color:#667eea;text-decoration:none;font-size:13px;border:2px solid #667eea;padding:10px 20px;border-radius:10px;font-weight:600;transition:all 0.2s" onmouseover="this.style.background='#667eea';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='#667eea'">📥 下载数据库</a>
+  </div>
+</header>
+
+<!-- 创建日志弹窗 -->
+<div id="createLogModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>创建新日志</h3>
+      <span class="close" onclick="hideModal('createLogModal')">&times;</span>
+    </div>
+    <div>
+      <label>操作人 *</label>
+      <input id="m_operator" placeholder="请输入操作人姓名" />
+      
+      <label>密钥ID *</label>
+      <input id="m_keyId" placeholder="请输入密钥ID" />
+      
+      <label>操作类型 *</label>
+      <select id="m_action">
+        <option value="密钥生成">密钥生成</option>
+        <option value="密钥删除">密钥删除</option>
+        <option value="密钥销毁">密钥销毁</option>
+        <option value="密钥导入">密钥导入</option>
+      </select>
+      
+      <label>操作内容</label>
+      <textarea id="m_content" rows="4" placeholder="请描述操作的详细内容..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="hideModal('createLogModal')">取消</button>
+      <button onclick="createLog()">确认创建</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <section class="card">
+    <h2>📊 当前状态</h2>
+    <table>
+      <tbody>
+      <tr><td>当前区块</td><td class="mono" id="currentBlockId">-</td></tr>
+      <tr><td>区块内日志数</td><td class="mono" id="currentLogCount">0</td></tr>
+      <tr><td>随机阈值</td><td class="mono" id="randomBlockSize">-</td></tr>
+      <tr><td>已封区块数</td><td class="mono" id="sealedBlocksCount">0</td></tr>
+      <tr><td>链完整性有效</td><td class="mono" id="chainValid">-</td></tr>
+      <tr><td>结果总数</td><td class="mono" id="total">0</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>📦 区块列表</h2>
+    <div class="filters">
+      <div>
+        <label>开始时间</label>
+        <input id="start" type="datetime-local" />
+      </div>
+      <div>
+        <label>结束时间</label>
+        <input id="end" type="datetime-local" />
+      </div>
+    </div>
+    <div class="row" style="margin-bottom:12px">
+      <button onclick="loadBlocks(1)">🔍 查询</button>
+      <button onclick="document.getElementById('start').value='';document.getElementById('end').value='';currentBlockPage=1;loadBlocks()" class="secondary">↺ 重置</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>区块ID</th><th>创建时间</th><th>日志数</th><th>Merkle根</th><th>状态</th></tr></thead>
+        <tbody id="blocksBody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <div class="pagination-info" id="blockPageInfo">第 1 / 1 页（共 0 条）</div>
+      <div class="pagination-controls">
+        <button id="blockPrevBtn" class="pagination-btn" onclick="prevBlockPage()" title="上一页">←</button>
+        <button id="blockNextBtn" class="pagination-btn" onclick="nextBlockPage()" title="下一页">→</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" style="grid-column: 1 / span 2">
+    <h2>🔍 区块详情</h2>
+    <pre id="blockDetail" class="mono" style="white-space:pre-wrap;max-height:400px;overflow:auto;border:1px solid #e2e8f0;border-radius:12px;padding:20px;background:#f8fafc;font-size:13px;line-height:1.6">点击区块列表中的任意区块查看详细信息...</pre>
+  </section>
+
+  <section id="logsSection" class="card" style="grid-column: 1 / span 2">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="margin:0">📝 日志列表</h2>
+      <button onclick="showModal('createLogModal')" class="create-log-btn">➕ 创建日志</button>
+    </div>
+    <div class="filters">
+      <div>
+        <label>操作人</label>
+        <input id="l_operator" placeholder="筛选操作人" />
+      </div>
+      <div>
+        <label>密钥ID</label>
+        <input id="l_keyId" placeholder="筛选密钥ID" />
+      </div>
+      <div>
+        <label>操作类型</label>
+        <select id="l_action">
+          <option value="">全部</option>
+          <option value="密钥生成">密钥生成</option>
+          <option value="密钥删除">密钥删除</option>
+          <option value="密钥销毁">密钥销毁</option>
+          <option value="密钥导入">密钥导入</option>
+        </select>
+      </div>
+      <div>
+        <label>开始时间</label>
+        <input id="l_start" type="datetime-local" />
+      </div>
+      <div>
+        <label>结束时间</label>
+        <input id="l_end" type="datetime-local" />
+      </div>
+    </div>
+    <div class="row" style="margin-bottom:12px">
+      <button onclick="currentLogPage=1;loadLogs()">🔍 查询</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+        <tr>
+          <th>日志ID</th><th>操作人</th><th>密钥ID</th><th>操作类型</th><th>时间</th><th>所属区块</th><th>哈希</th><th>验证状态</th>
+        </tr>
+        </thead>
+        <tbody id="logsBody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <div class="pagination-info" id="logPageInfo">第 1 / 1 页（共 0 条）</div>
+      <div class="pagination-controls">
+        <button id="logPrevBtn" class="pagination-btn" onclick="prevLogPage()" title="上一页">←</button>
+        <button id="logNextBtn" class="pagination-btn" onclick="nextLogPage()" title="下一页">→</button>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
