@@ -6,8 +6,8 @@ import (
 )
 
 type BlockHeaderModelImpl interface {
-	GetAll(unsealedBlocks []BlockHeaderModel) error
-	GetIdBySignature(headers []BlockHeaderModel) error
+	GetNotSealedAll(unsealedBlocks *[]BlockHeaderModel) error
+	GetIdBySignature(headers *[]BlockHeaderModel) error
 	Update(BlockID string, signature string) error
 	GetBlocksByID(blockID string, header *BlockHeaderModel) error
 	GetBlockCount() (count int64, err error)
@@ -32,14 +32,14 @@ func (t *BlockHeaderModel) TableName() string {
 }
 
 // GetAll  任务信息
-func (t *BlockHeaderModel) GetAll(unsealedBlocks []BlockHeaderModel) error {
+func (t *BlockHeaderModel) GetNotSealedAll(unsealedBlocks *[]BlockHeaderModel) error {
 	if err := global.DB.Table(t.TableName()).Unscoped().Where("is_sealed = ?", false).Find(&unsealedBlocks).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (t *BlockHeaderModel) GetIdBySignature(headers []BlockHeaderModel) error {
+func (t *BlockHeaderModel) GetIdBySignature(headers *[]BlockHeaderModel) error {
 	if err := global.DB.Table(t.TableName()).Unscoped().Where("block_signature != ?", "").Order("block_id asc").Find(&headers).Error; err != nil {
 		return err
 	}
@@ -49,7 +49,6 @@ func (t *BlockHeaderModel) GetIdBySignature(headers []BlockHeaderModel) error {
 func (t *BlockHeaderModel) Update(blockID string, signature string) error {
 	// 更新数据库中的区块状态为已封块
 	if err := global.DB.Table(t.TableName()).Unscoped().Where("block_id = ?", blockID).Updates(map[string]interface{}{
-		"is_sealed":       true,
 		"block_signature": signature,
 	}).Error; err != nil {
 		return err
