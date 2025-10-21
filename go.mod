@@ -1,4 +1,4 @@
-module chain_log_demo
+module log-block-encrypt
 
 go 1.22
 
