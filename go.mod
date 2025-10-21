@@ -1,4 +1,4 @@
-module chain_log_demo
+module github.com/andang-secure/log-block-encrypt
 
 go 1.22
 
