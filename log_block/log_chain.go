@@ -1,10 +1,6 @@
 package log_block
 
 import (
-	"chain_log_demo/data"
-	"chain_log_demo/global"
-	"chain_log_demo/model"
-	"chain_log_demo/utils"
 	"crypto"
 	r2 "crypto/rand"
 	"crypto/rsa"
@@ -13,6 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/andang-secure/log-block-encrypt/data"
+	"github.com/andang-secure/log-block-encrypt/global"
+	"github.com/andang-secure/log-block-encrypt/model"
+	"github.com/andang-secure/log-block-encrypt/utils"
 	"gorm.io/gorm"
 	"log"
 	"strconv"

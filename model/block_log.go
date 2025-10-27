@@ -1,7 +1,7 @@
 package model
 
 import (
-	"chain_log_demo/global"
+	"github.com/andang-secure/log-block-encrypt/global"
 	"time"
 )
 
