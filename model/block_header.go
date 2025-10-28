@@ -57,28 +57,28 @@ func (t *BlockHeaderModel) Update(blockID string, signature string) error {
 }
 
 func (t *BlockHeaderModel) GetBlocksByID(blockID string, header *BlockHeaderModel) error {
-	if err := global.DB.Table(t.TableName()).Unscoped().Where("block_id = ?", blockID).First(&header).Error; err == nil {
+	if err := global.DB.Table(t.TableName()).Unscoped().Where("block_id = ?", blockID).First(&header).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (t *BlockHeaderModel) GetBlockCount() (count int64, err error) {
-	if err := global.DB.Table(t.TableName()).Unscoped().Count(&count).Error; err == nil {
+	if err := global.DB.Table(t.TableName()).Unscoped().Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil
 }
 
 func (t *BlockHeaderModel) GetLatestBlock(latestBlock *BlockHeaderModel) error {
-	if err := global.DB.Table(t.TableName()).Order("block_id desc").First(&latestBlock).Error; err == nil {
+	if err := global.DB.Table(t.TableName()).Order("block_id desc").First(&latestBlock).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (t *BlockHeaderModel) GetOrCreateBlock(bh *BlockHeaderModel) error {
-	if err := global.DB.Table(t.TableName()).Where("block_id = ?", bh.BlockID).Assign(bh).FirstOrCreate(bh).Error; err == nil {
+	if err := global.DB.Table(t.TableName()).Where("block_id = ?", bh.BlockID).Assign(bh).FirstOrCreate(bh).Error; err != nil {
 		return err
 	}
 	return nil
