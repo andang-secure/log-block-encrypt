@@ -45,8 +45,11 @@ func NewLogChain(conf *LogChainConf) (*LogChain, error) {
 	global.BlockHeaderTableName = conf.BlockHeaderTableName
 
 	// 2. 创建LogChain实例
+	// 2. 创建LogChain实例
 	lc := &LogChain{
-		rootKey: conf.RootKey,
+		rootKey:              conf.RootKey,
+		blockHeaderModelImpl: &model.BlockHeaderModel{},
+		blockLogModelImpl:    &model.BlockLogModel{},
 	}
 	lc.startAutoSealScheduler()
 	return lc, nil
