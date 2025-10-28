@@ -17,13 +17,13 @@ type BlockHeaderModelImpl interface {
 }
 
 type BlockHeaderModel struct {
-	ID             uint   `gorm:"primaryKey"`
-	BlockID        string `gorm:"uniqueIndex"`
-	PrevBlockHash  string
-	MerkleRoot     string
-	BlockSignature string
-	LogCount       int
-	CreatedAt      time.Time
+	ID             int64     `json:"id" gorm:"column:id;type:SERIAL;primary_key" ` // ID
+	BlockID        string    `gorm:"column:block_id" db:"block_id" form:"block_id" json:"block_id"`
+	PrevBlockHash  string    `gorm:"column:prev_block_hash" db:"prev_block_hash" form:"prev_block_hash" json:"prev_block_hash"`
+	MerkleRoot     string    `gorm:"column:merkle_root" db:"merkle_root" form:"merkle_root" json:"merkle_root"`
+	BlockSignature string    `gorm:"column:block_signature" db:"block_signature" form:"block_signature" json:"block_signature"`
+	LogCount       int       `gorm:"column:log_count" db:"log_count" form:"log_count" json:"log_count"`
+	CreatedAt      time.Time `gorm:"column:log_count" db:"log_count" form:"log_count" json:"log_count"`
 	UpdatedAt      time.Time
 }
 

@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/andang-secure/log-block-encrypt/global"
-	"time"
 )
 
 type BlockLogModelImpl interface {
@@ -12,14 +11,15 @@ type BlockLogModelImpl interface {
 	Create(newLog *BlockLogModel) error
 }
 type BlockLogModel struct {
-	ID          uint `gorm:"primaryKey"`
-	LogID       int  `gorm:"index;size:32"`
-	LogData     string
-	PrevHash    string
-	CurrentHash string
-	BlockID     string `gorm:"index;size:32"`
+	ID          int64  `json:"id" gorm:"column:id;type:SERIAL;primary_key" ` // ID
+	LogID       int    `gorm:"column:log_id" db:"log_id" form:"log_id" json:"log_id"`
+	LogData     string `gorm:"column:log_data" db:"log_data" form:"log_data" json:"log_data"`
+	PrevHash    string `gorm:"column:prev_hash" db:"prev_hash" form:"prev_hash" json:"prev_hash"`
+	CurrentHash string `gorm:"column:current_hash" db:"current_hash" form:"current_hash" json:"current_hash"`
+	BlockID     string `gorm:"column:block_id" db:"block_id" form:"block_id" json:"block_id"`
 	CreatedAt   int64
-	UpdatedAt   time.Time
+	UpdatedAt   int64
+	DeletedAt   int64
 }
 
 func (b *BlockLogModel) TableName() string {
