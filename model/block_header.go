@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/andang-secure/log-block-encrypt/global"
-	"time"
 )
 
 type BlockHeaderModelImpl interface {
@@ -17,14 +16,15 @@ type BlockHeaderModelImpl interface {
 }
 
 type BlockHeaderModel struct {
-	ID             int64     `json:"id" gorm:"column:id;type:SERIAL;primary_key" ` // ID
-	BlockID        string    `gorm:"column:block_id" db:"block_id" form:"block_id" json:"block_id"`
-	PrevBlockHash  string    `gorm:"column:prev_block_hash" db:"prev_block_hash" form:"prev_block_hash" json:"prev_block_hash"`
-	MerkleRoot     string    `gorm:"column:merkle_root" db:"merkle_root" form:"merkle_root" json:"merkle_root"`
-	BlockSignature string    `gorm:"column:block_signature" db:"block_signature" form:"block_signature" json:"block_signature"`
-	LogCount       int       `gorm:"column:log_count" db:"log_count" form:"log_count" json:"log_count"`
-	CreatedAt      time.Time `gorm:"column:log_count" db:"log_count" form:"log_count" json:"log_count"`
-	UpdatedAt      time.Time
+	ID             int64  `json:"id" gorm:"column:id;type:SERIAL;primary_key" ` // ID
+	BlockID        string `gorm:"column:block_id" db:"block_id" form:"block_id" json:"block_id"`
+	PrevBlockHash  string `gorm:"column:prev_block_hash" db:"prev_block_hash" form:"prev_block_hash" json:"prev_block_hash"`
+	MerkleRoot     string `gorm:"column:merkle_root" db:"merkle_root" form:"merkle_root" json:"merkle_root"`
+	BlockSignature string `gorm:"column:block_signature" db:"block_signature" form:"block_signature" json:"block_signature"`
+	IsSealed       bool   `gorm:"column:is_sealed" db:"is_sealed" form:"is_sealed" json:"is_sealed"`
+	LogCount       int    `gorm:"column:log_count" db:"log_count" form:"log_count" json:"log_count"`
+	CreatedAt      int64  `json:"created_at"` // 创建时间
+	UpdatedAt      int64  `json:"updated_at"` // 修改时间
 }
 
 func (t *BlockHeaderModel) TableName() string {

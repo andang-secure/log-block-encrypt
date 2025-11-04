@@ -301,12 +301,12 @@ func (lc *LogChain) VerifyLog(logID int, blockID string) (bool, error) {
 		}
 	}
 	if currentLog == nil {
-		return false, fmt.Errorf("日志[%d]不存在于区块[%s]中", logID, blockID)
+		return false, fmt.Errorf("日志[%d]不存在于区块[%s]中", blockID)
 	}
 	// 5. 验证日志自身哈希（内容未篡改）
 	calculatedLogHash := utils.CalculateHash(currentLog.LogData)
 	if calculatedLogHash != currentLog.CurrentHash {
-		return false, fmt.Errorf("日志[%d]内容被篡改（哈希不匹配）", logID)
+		return false, fmt.Errorf("日志[%d]内容被篡改（哈希不匹配）", currentLog.ID)
 	}
 
 	// 验证与前一条日志的关联
@@ -342,7 +342,7 @@ func (lc *LogChain) VerifyLog(logID int, blockID string) (bool, error) {
 		}
 	}
 	if targetLogIndex == -1 {
-		return false, fmt.Errorf("日志[%d]未在区块[%s]中找到", logID, blockID)
+		return false, fmt.Errorf("日志[%d]未在区块[%s]中找到", currentLog.ID, blockID)
 	}
 
 	// 生成哈希路径并重新计算Merkle根
@@ -364,7 +364,7 @@ func (lc *LogChain) VerifyLog(logID int, blockID string) (bool, error) {
 	}
 
 	// 所有验证通过
-	log.Printf("日志[%d]（区块[%s]）验证通过", logID, blockID)
+	log.Printf("日志为ID[%d]（区块[%s]）验证通过", currentLog.ID, blockID)
 	return true, nil
 }
 
@@ -504,7 +504,7 @@ func (lc *LogChain) CreateLog(logData string) error {
 	// 6. 计算日志哈希并初始化日志对象
 	logHash := utils.CalculateHash(logData) // 基于日志内容计算哈希
 	newLog := &model.BlockLogModel{
-		LogID:       logID,
+		//LogID:       logID,
 		LogData:     logData, // 存储原始日志内容（用于后续验证）
 		CreatedAt:   time.Now().Unix(),
 		PrevHash:    prevLogHash,
