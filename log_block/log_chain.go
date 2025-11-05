@@ -16,6 +16,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -57,6 +58,7 @@ func NewLogChain(conf *LogChainConf) (*LogChain, error) {
 
 // LogChain 日志链
 type LogChain struct {
+	sync.Mutex
 	rootKey              *rsa.PrivateKey
 	blockHeaderModelImpl model.BlockHeaderModelImpl
 	blockLogModelImpl    model.BlockLogModelImpl
@@ -432,7 +434,8 @@ func getMerklePath(leafHashes []string, targetIndex int) []string {
 }
 
 func (lc *LogChain) CreateLog(logData *model.BlockLogModel) error {
-
+	lc.Lock()
+	defer lc.Unlock()
 	if logData == nil {
 		return errors.New("日志内容不能为空")
 	}
