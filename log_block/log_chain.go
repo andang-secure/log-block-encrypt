@@ -545,12 +545,27 @@ func (lc *LogChain) CreateLog(logData *model.BlockLogModel) error {
 	// 6. 计算日志哈希并初始化日志对象
 	logHash := utils.CalculateHash(hashSource) // 基于日志内容计算哈希
 	newLog := &model.BlockLogModel{
-		CreatedAt:   time.Now().Unix(),
+		LogID:       logID,
 		PrevHash:    prevLogHash,
 		CurrentHash: logHash, // 记录当前日志哈希
 		BlockID:     currentBlock.BlockID,
+		CreatedAt:   time.Now().Unix(),
+		UpdatedAt:   0,
+		Name:        logData.Name,
+		EnName:      logData.EnName,
+		URL:         logData.URL,
+		Method:      logData.Method,
+		Data:        logData.Data,
+		UID:         logData.UID,
+		Uname:       logData.Uname,
+		RequestID:   logData.RequestID,
+		Type:        logData.Type,
+		RemoteIP:    logData.RemoteIP,
+		ProjectID:   logData.ProjectID,
+		Result:      logData.Result,
+		EnResult:    logData.EnResult,
+		HaxEqually:  logData.HaxEqually,
 	}
-
 	// 6. 保存日志到数据库
 	if err := lc.blockLogModelImpl.Create(newLog); err != nil {
 		return fmt.Errorf("区块[%s],保存日志[%d]失败: %w", currentBlock.BlockID, logID, err)
