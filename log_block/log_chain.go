@@ -431,7 +431,7 @@ func getMerklePath(leafHashes []string, targetIndex int) []string {
 	return path
 }
 
-func (lc *LogChain) CreateLog(logData *data.BlockLogRequest) error {
+func (lc *LogChain) CreateLog(logData *model.BlockLogModel) error {
 
 	if logData == nil {
 		return errors.New("日志内容不能为空")
@@ -545,7 +545,6 @@ func (lc *LogChain) CreateLog(logData *data.BlockLogRequest) error {
 	// 6. 计算日志哈希并初始化日志对象
 	logHash := utils.CalculateHash(hashSource) // 基于日志内容计算哈希
 	newLog := &model.BlockLogModel{
-
 		CreatedAt:   time.Now().Unix(),
 		PrevHash:    prevLogHash,
 		CurrentHash: logHash, // 记录当前日志哈希
