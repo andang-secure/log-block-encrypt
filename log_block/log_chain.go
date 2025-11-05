@@ -305,7 +305,7 @@ func (lc *LogChain) VerifyLog(logID int, blockID string) (bool, error) {
 	}
 	// 5. 验证日志自身哈希（内容未篡改）
 	hashSource := fmt.Sprintf(
-		"logId=%d&createdAt=%d&name=%s&url=%s&method=%s&data=%s&uid=%d&uname=%s&requestId=%s&type=%s&remoteIp=%s&projectId=%d&result=%s&enName=%s&enResult=%s&prevHash=%s&blockId=%s",
+		"logId=%d&createdAt=%d&name=%s&url=%s&method=%s&data=%s&uid=%d&uname=%s&requestId=%s&type=%d&remoteIp=%s&projectId=%d&result=%s&enName=%s&enResult=%s&prevHash=%s&blockId=%s",
 		currentLog.LogID,
 		currentLog.CreatedAt,
 		currentLog.Name,
@@ -523,7 +523,7 @@ func (lc *LogChain) CreateLog(logData *data.BlockLogRequest) error {
 	}
 
 	hashSource := fmt.Sprintf(
-		"logId=%d&createdAt=%d&name=%s&url=%s&method=%s&data=%s&uid=%d&uname=%s&requestId=%s&type=%s&remoteIp=%s&projectId=%d&result=%s&enName=%s&enResult=%s&prevHash=%s&blockId=%s",
+		"logId=%d&createdAt=%d&name=%s&url=%s&method=%s&data=%s&uid=%d&uname=%s&requestId=%s&type=%d&remoteIp=%s&projectId=%d&result=%s&enName=%s&enResult=%s&prevHash=%s&blockId=%s",
 		logID,
 		logData.CreatedAt,
 		logData.Name,
