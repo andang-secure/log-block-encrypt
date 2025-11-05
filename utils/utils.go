@@ -3,6 +3,8 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -51,4 +53,12 @@ func GetTodayTimestamp() int64 {
 func StrToInt(str string) (int64, error) {
 	result, err := strconv.ParseInt(str, 10, 64)
 	return result, err
+}
+
+func ConvertStructToJSON(v interface{}) (string, error) {
+	jsonBytes, err := json.Marshal(v)
+	if err != nil {
+		return "", fmt.Errorf("转换JSON失败: %w", err)
+	}
+	return string(jsonBytes), nil
 }

@@ -304,7 +304,28 @@ func (lc *LogChain) VerifyLog(logID int, blockID string) (bool, error) {
 		return false, fmt.Errorf("日志[%d]不存在于区块[%s]中", blockID)
 	}
 	// 5. 验证日志自身哈希（内容未篡改）
-	calculatedLogHash := utils.CalculateHash(currentLog.LogData)
+	hashSource := fmt.Sprintf(
+		"logId=%d&createdAt=%d&name=%s&url=%s&method=%s&data=%s&uid=%d&uname=%s&requestId=%s&type=%s&remoteIp=%s&projectId=%d&result=%s&enName=%s&enResult=%s&prevHash=%s&blockId=%s",
+		currentLog.LogID,
+		currentLog.CreatedAt,
+		currentLog.Name,
+		currentLog.URL,
+		currentLog.Method,
+		currentLog.Data,
+		currentLog.UID,
+		currentLog.Uname,
+		currentLog.RequestID,
+		currentLog.Type,
+		currentLog.RemoteIP,
+		currentLog.ProjectID,
+		currentLog.Result,
+		currentLog.EnName,
+		currentLog.EnResult,
+		currentLog.PrevHash,
+		currentLog.BlockID,
+	)
+
+	calculatedLogHash := utils.CalculateHash(hashSource)
 	if calculatedLogHash != currentLog.CurrentHash {
 		return false, fmt.Errorf("日志[%d]内容被篡改（哈希不匹配）", currentLog.ID)
 	}
@@ -410,9 +431,9 @@ func getMerklePath(leafHashes []string, targetIndex int) []string {
 	return path
 }
 
-func (lc *LogChain) CreateLog(logData string) error {
+func (lc *LogChain) CreateLog(logData *data.BlockLogRequest) error {
 
-	if logData == "" {
+	if logData == nil {
 		return errors.New("日志内容不能为空")
 	}
 	blockID := generateBlockID()
@@ -501,11 +522,30 @@ func (lc *LogChain) CreateLog(logData string) error {
 		prevLogHash = latestLog.CurrentHash
 	}
 
+	hashSource := fmt.Sprintf(
+		"logId=%d&createdAt=%d&name=%s&url=%s&method=%s&data=%s&uid=%d&uname=%s&requestId=%s&type=%s&remoteIp=%s&projectId=%d&result=%s&enName=%s&enResult=%s&prevHash=%s&blockId=%s",
+		logID,
+		logData.CreatedAt,
+		logData.Name,
+		logData.URL,
+		logData.Method,
+		logData.Data,
+		logData.UID,
+		logData.Uname,
+		logData.RequestID,
+		logData.Type,
+		logData.RemoteIP,
+		logData.ProjectID,
+		logData.Result,
+		logData.EnName,
+		logData.EnResult,
+		prevLogHash,
+		currentBlock.BlockID,
+	)
 	// 6. 计算日志哈希并初始化日志对象
-	logHash := utils.CalculateHash(logData) // 基于日志内容计算哈希
+	logHash := utils.CalculateHash(hashSource) // 基于日志内容计算哈希
 	newLog := &model.BlockLogModel{
-		//LogID:       logID,
-		LogData:     logData, // 存储原始日志内容（用于后续验证）
+
 		CreatedAt:   time.Now().Unix(),
 		PrevHash:    prevLogHash,
 		CurrentHash: logHash, // 记录当前日志哈希
