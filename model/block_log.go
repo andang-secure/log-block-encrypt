@@ -60,11 +60,11 @@ func (b *BlockLogModel) GetEndLog(blockID string, latestLog *BlockLogModel) erro
 	// 如果你不需要查询软删除的记录，直接删除下面这行
 	query = query.Unscoped()
 
-	err := query.Select([]string{"log_id", "block_id", "content", "created_at"}). // 替换为实际需要的字段
-											Where("block_id = ?", blockID).
-											Order("log_id DESC").
-											Limit(1). // 显式指定Limit，语义更清晰
-											First(&latestLog).Error
+	err := query.Select([]string{"log_id", "block_id"}). // 替换为实际需要的字段
+								Where("block_id = ?", blockID).
+								Order("log_id DESC").
+								Limit(1). // 显式指定Limit，语义更清晰
+								First(&latestLog).Error
 
 	if err != nil {
 		// 可增加日志打印，方便排查慢查询
