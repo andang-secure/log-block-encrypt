@@ -442,29 +442,7 @@ func (lc *LogChain) CreateLog(logData *model.BlockLogModel) error {
 	blockID := generateBlockID()
 	var currentBlock model.BlockHeaderModel
 	err := lc.blockHeaderModelImpl.GetBlocksByID(blockID, &currentBlock)
-	//if err != nil {
-	//	return fmt.Errorf("查询区块[%s]失败: %w", blockID, err)
-	//}
-	//if currentBlock.ID == 0 {
-	//
-	//	// 假设GetBlocksByID在找不到记录时返回gorm.ErrRecordNotFound
-	//	if errors.Is(err, gorm.ErrRecordNotFound) {
-	//		// 区块不存在，需要创建新区块
-	//		newBlock, err := lc.createNewBlock()
-	//		if err != nil {
-	//			return fmt.Errorf("创建新区块失败：%w", err)
-	//		}
-	//		// 保存新区块到数据库
-	//		if err := lc.blockHeaderModelImpl.GetOrCreateBlock(newBlock); err != nil {
-	//			return fmt.Errorf("保存新区块失败: %w", err)
-	//		}
-	//		currentBlock = *newBlock // 更新当前区块为新创建的区块
-	//		fmt.Printf("已创建新区块: %s", currentBlock.BlockID)
-	//
-	//	} else {
-	//		return fmt.Errorf("查询区块[%s]失败: %w", blockID, err)
-	//	}
-	//}
+
 	// 1. 若当前无区块，初始化新区块
 	if err != nil {
 

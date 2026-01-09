@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"github.com/andang-secure/log-block-encrypt/global"
 )
 
@@ -12,11 +13,11 @@ type BlockLogModelImpl interface {
 }
 type BlockLogModel struct {
 	ID          int64  `json:"id" gorm:"column:id;type:SERIAL;primary_key" ` // ID
-	LogID       int    `gorm:"column:log_id;index:idx_blockid_logid,sort:DESC" db:"log_id" form:"log_id" json:"log_id"`
+	LogID       int    `gorm:"column:log_id" db:"log_id" form:"log_id" json:"log_id"`
 	PrevHash    string `gorm:"column:prev_hash" db:"prev_hash" form:"prev_hash" json:"prev_hash"`
 	CurrentHash string `gorm:"column:current_hash" db:"current_hash" form:"current_hash" json:"current_hash"`
 	// 核心：为block_id指定相同名称的复合索引idx_blockid_logid
-	BlockID    string `gorm:"column:block_id;index:idx_blockid_logid" db:"block_id" form:"block_id" json:"block_id"`
+	BlockID    string `gorm:"column:block_id" db:"block_id" form:"block_id" json:"block_id"`
 	CreatedAt  int64  `json:"created_at"`                                                // 创建时间
 	UpdatedAt  int64  `json:"updated_at"`                                                // 修改时间
 	Name       string `gorm:"column:name" db:"name" json:"name" form:"name"`             //账号名称
@@ -56,27 +57,22 @@ func (b *BlockLogModel) GetLogByBlockIdAndLogId(blockID string, logID string, lo
 
 func (b *BlockLogModel) GetEndLog(blockID string, latestLog *BlockLogModel) error {
 
-	query := global.DB.Table(b.TableName())
-	// 如果你不需要查询软删除的记录，直接删除下面这行
-	query = query.Unscoped()
+	// 核心：只按 log_id DESC 排序，去掉 GORM 自动加的 id 排序
+	// 同时仅查询必要字段，减少 IO
+	sqlStr := `SELECT log_id, current_hash, block_id 
+               FROM cas_log 
+               WHERE block_id = ? 
+               ORDER BY log_id DESC 
+               LIMIT 1`
 
-	err := query.Select([]string{
-		"log_id",      // 存在
-		"block_id",    // 存在
-		"created_at",  // 存在
-		"Data",        // 存在，业务字段，按需选择
-		"CurrentHash", // 存在，按需选择
-		"RequestID",   // 存在，按需选择
-	}).
-		Where("block_id = ?", blockID).
-		Order("log_id DESC").
-		Limit(1).
-		First(&latestLog).Error
-
-	if err != nil {
-		// 可增加日志打印，方便排查慢查询
-
-		return err
+	// 使用 Raw 执行原生 SQL，完全控制查询逻辑
+	result := global.DB.Unscoped().Raw(sqlStr, blockID).Scan(latestLog)
+	if result.Error != nil {
+		// 区分 "无记录" 和 "查询错误"
+		if result.RowsAffected == 0 {
+			return errors.New("区块无日志记录")
+		}
+		return result.Error
 	}
 	return nil
 }
