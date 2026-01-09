@@ -1,7 +1,6 @@
 package model
 
 import (
-	"errors"
 	"github.com/andang-secure/log-block-encrypt/global"
 )
 
@@ -57,22 +56,14 @@ func (b *BlockLogModel) GetLogByBlockIdAndLogId(blockID string, logID string, lo
 
 func (b *BlockLogModel) GetEndLog(blockID string, latestLog *BlockLogModel) error {
 
-	// 核心：只按 log_id DESC 排序，去掉 GORM 自动加的 id 排序
-	// 同时仅查询必要字段，减少 IO
-	sqlStr := `SELECT log_id, current_hash, block_id 
-               FROM cas_log 
-               WHERE block_id = ? 
-               ORDER BY log_id DESC 
-               LIMIT 1`
-
-	// 使用 Raw 执行原生 SQL，完全控制查询逻辑
-	result := global.DB.Unscoped().Raw(sqlStr, blockID).Scan(latestLog)
-	if result.Error != nil {
-		// 区分 "无记录" 和 "查询错误"
-		if result.RowsAffected == 0 {
-			return errors.New("区块无日志记录")
-		}
-		return result.Error
+	if err := global.DB.Table(b.TableName()).Unscoped().
+		Select("id, block_id, log_id, create_time, content").
+		Where("block_id = ?", blockID).
+		Order("log_id DESC").
+		// 明确 Limit 1，语义更清晰
+		Limit(1).
+		First(&latestLog).Error; err != nil {
+		return err
 	}
 	return nil
 }
