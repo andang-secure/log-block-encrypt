@@ -56,7 +56,7 @@ func (b *BlockLogModel) GetLogByBlockIdAndLogId(blockID string, logID string, lo
 
 func (b *BlockLogModel) GetEndLog(blockID string, latestLog *BlockLogModel) error {
 
-	if err := global.DB.Table(b.TableName()).Unscoped().
+	if err := global.DB.Table(b.TableName()).
 		Select("id, block_id, log_id, prev_hash, current_hash").
 		Where("block_id = ?", blockID).
 		Order("log_id DESC").
