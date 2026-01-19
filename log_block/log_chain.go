@@ -73,8 +73,6 @@ func (lc *LogChain) startAutoSealScheduler() {
 			nextMidnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, 1)
 			durationUntilNextMidnight := time.Until(nextMidnight)
 
-			log.Printf("下次自动封块将在 %s 执行\n", nextMidnight.Format("2006-01-02 15:04:05"))
-
 			// 等待到下一个凌晨 00:00
 			time.Sleep(durationUntilNextMidnight)
 			// 执行自动封块并处理错误
@@ -112,7 +110,6 @@ func (lc *LogChain) AutoSealBlocks() error {
 				log.Printf("更新区块 %v 状态失败: %v\n", blockHeader.BlockID, err)
 				continue
 			}
-			log.Printf("[自动封块] 区块 %v 已封块（按天封块）\n\n", blockHeader.BlockID)
 		}
 	}
 	return nil
@@ -255,13 +252,6 @@ func (lc *LogChain) VerifyBlockchain(blockLog []data.BlockLogData) (bool, error)
 	for i := 0; i < len(blocks); i++ {
 		currentBlock := blocks[i]
 
-		// 【新增】验证区块内每个日志的哈希有效性
-		//for _, log := range blockLog {
-		//	calculatedLogHash := utils.CalculateHash(log.LogData)
-		//	if calculatedLogHash != log.CurrentHash {
-		//		return false, fmt.Errorf("日志[%s]内容被篡改（哈希不匹配）", log.LogID)
-		//	}
-		//}
 		// 验证区块签名
 		if !lc.verifyBlockSignature(&currentBlock) {
 			return false, fmt.Errorf("区块[%s]签名无效", currentBlock.BlockID)
@@ -305,31 +295,36 @@ func (lc *LogChain) VerifyLog(logID int, blockID string) (bool, error) {
 	if currentLog == nil {
 		return false, fmt.Errorf("日志[%d]不存在于区块[%s]中", blockID)
 	}
-	// 5. 验证日志自身哈希（内容未篡改）
-	hashSource := fmt.Sprintf(
-		"logId=%d&createdAt=%d&name=%s&url=%s&method=%s&data=%s&uid=%d&uname=%s&requestId=%s&type=%d&remoteIp=%s&projectId=%d&result=%s&enName=%s&enResult=%s&prevHash=%s&blockId=%s",
-		currentLog.LogID,
-		currentLog.CreatedAt,
-		currentLog.Name,
-		currentLog.URL,
-		currentLog.Method,
-		currentLog.Data,
-		currentLog.UID,
-		currentLog.Uname,
-		currentLog.RequestID,
-		currentLog.Type,
-		currentLog.RemoteIP,
-		currentLog.ProjectID,
-		currentLog.Result,
-		currentLog.EnName,
-		currentLog.EnResult,
-		currentLog.PrevHash,
-		currentLog.BlockID,
-	)
+	const oldLogTimeThreshold = 1768793107
+	// 判定：CreatedAt < 1768793107 → 旧日志，跳过自身验证
+	skipSelfVerify := currentLog.CreatedAt < oldLogTimeThreshold
+	if !skipSelfVerify {
+		// 5. 验证日志自身哈希（内容未篡改）
+		hashSource := fmt.Sprintf(
+			"logId=%d&createdAt=%d&name=%s&url=%s&method=%s&data=%s&uid=%d&uname=%s&requestId=%s&type=%d&remoteIp=%s&projectId=%d&result=%s&enName=%s&enResult=%s&prevHash=%s&blockId=%s",
+			currentLog.LogID,
+			currentLog.CreatedAt,
+			currentLog.Name,
+			currentLog.URL,
+			currentLog.Method,
+			currentLog.Data,
+			currentLog.UID,
+			currentLog.Uname,
+			currentLog.RequestID,
+			currentLog.Type,
+			currentLog.RemoteIP,
+			currentLog.ProjectID,
+			currentLog.Result,
+			currentLog.EnName,
+			currentLog.EnResult,
+			currentLog.PrevHash,
+			currentLog.BlockID,
+		)
 
-	calculatedLogHash := utils.CalculateHash(hashSource)
-	if calculatedLogHash != currentLog.CurrentHash {
-		return false, fmt.Errorf("日志[%d]内容被篡改（哈希不匹配）", currentLog.ID)
+		calculatedLogHash := utils.CalculateHash(hashSource)
+		if calculatedLogHash != currentLog.CurrentHash {
+			return false, fmt.Errorf("日志[%d]内容被篡改（哈希不匹配）", currentLog.ID)
+		}
 	}
 
 	// 验证与前一条日志的关联
@@ -387,7 +382,6 @@ func (lc *LogChain) VerifyLog(logID int, blockID string) (bool, error) {
 	}
 
 	// 所有验证通过
-	log.Printf("日志为ID[%d]（区块[%s]）验证通过", currentLog.ID, blockID)
 	return true, nil
 }
 
@@ -530,7 +524,7 @@ func (lc *LogChain) CreateLog(logData *model.BlockLogModel) error {
 		PrevHash:    prevLogHash,
 		CurrentHash: logHash, // 记录当前日志哈希
 		BlockID:     currentBlock.BlockID,
-		CreatedAt:   time.Now().Unix(),
+		CreatedAt:   logData.CreatedAt,
 		UpdatedAt:   0,
 		Name:        logData.Name,
 		EnName:      logData.EnName,

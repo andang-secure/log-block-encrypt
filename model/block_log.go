@@ -60,7 +60,6 @@ func (b *BlockLogModel) GetEndLog(blockID string, latestLog *BlockLogModel) erro
 		Select("id, block_id, log_id, prev_hash, current_hash").
 		Where("block_id = ?", blockID).
 		Order("log_id DESC").
-		// 明确 Limit 1，语义更清晰
 		Limit(1).
 		First(&latestLog).Error; err != nil {
 		return err
